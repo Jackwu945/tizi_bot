@@ -53,9 +53,9 @@ bcc = Broadcast(loop=loop)
 app = Ariadne(
     broadcast=bcc,
     connect_info=MiraiSession(
-        host="http://119.91.153.27:1883",  # 填入 HTTP API 服务运行的地址
-        verify_key="wuyujie",
-        account=2018957703,  # 你的机器人的 qq 号
+        host="",  # 填入 HTTP API 服务运行的地址
+        verify_key="",
+        account=,  # 你的机器人的 qq 号
     )
 )
 
