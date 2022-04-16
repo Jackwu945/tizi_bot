@@ -25,17 +25,17 @@ from graia.ariadne.model import MiraiSession, Member, Group
 from pymysql.converters import escape_string
 
 # 常量
-cuoyicuo_say = ['再戳就要...就要被玩坏啦!', 'ばが、変態！', '烦诶', '仲咩？', "nnd，给我玩戳的是吧？直接来吧！"]
+cuoyicuo_say = ['再戳就要...就要被玩坏啦!', 'ばが、変態！', '烦诶', '仲咩？',"再戳把你绑起来!","不要再戳了...直接来吧！","别乱摸了啦","你戳到了奇怪的地方了!","啊!...不要戳这里","呜!","啊!","不要戳,我怕痒...呜呜呜","再戳咬断你手指(超凶)","(躲)","反击~","你欺负我...我这就去告诉主人!...呜呜"]
 max_show = 5
 cd = 20
 max_say_hold = 5
 manager_list = [1440239038, 179528936, 721265310]
-chatrank_group = [1136462265, 699726067, 704397430, 782748255, 634522040]
+chatrank_group = [1136462265, 699726067, 704397430, 782748255, 634522040, 282012452,297643538]
 chatrank_group_tmp = [782748255, 884706171]
-hello_send_group = [699726067, 634522040, 1136462265]
+hello_send_group = [699726067, 1136462265,297643538]
 leader_uid = {2709173: [634522040], 293793435: [1136462265],
-              235098388: [884706171, 634522040, 1136462265]}  # b站uid与群号相对应
-name = {2709173: "高木头子", 293793435: "易姐酱", 235098388: "主人桑"}
+              235098388: [884706171, 634522040, 1136462265], 188832903: [1136462265]}  # b站uid与群号相对应
+name = {2709173: "高木头子", 293793435: "易姐酱", 235098388: "主人桑", 188832903: "🐟"}
 new = {}
 caller_and_qid = {}
 for l in leader_uid:
@@ -69,6 +69,50 @@ with open('takagi.jpg', 'rb') as f:
 # 定时任务初始化
 sche = GraiaScheduler(loop=loop, broadcast=bcc)
 
+def tech_test():
+    time1=time.time()
+    top = 10  # 显示几个?
+    # say_count_qq={}
+    exception = "会让bot出现Exception的屑用户"
+
+    db = pymysql.connect(host="localhost", user="tizibot", password="12321", database="tizibot", charset='utf8')
+    cursor = db.cursor()
+    for g in chatrank_group:
+        sql = "select * from tizibot where qgroup='{}'".format(g)
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        dt = datetime.now().strftime("%Y-%m-%d")  # 获取现在年月日
+        say_count_name_times = {}
+        for row in result:
+            if str(dt) in str(row[0]):  # 是今天且是本次遍历的群
+                if ' ' in row[2]:  # 名字是空格记录可能会有bug???
+                    name = exception
+                else:
+                    name = row[2]
+                # if row[1] not in say_count_qq:
+                if row[2] not in say_count_name_times:
+                    # say_count_qq[row[1]] = 1
+                    say_count_name_times[name] = 1
+                else:
+                    # say_count_qq[row[1]] += 1
+                    say_count_name_times[name] += 1
+
+        say_count_name = sorted(say_count_name_times.items(), reverse=True,
+                                key=lambda kv: (kv[1], kv[0]))  # 排序,返回列表,内容为人名和发言次数元组
+
+        # 填充格式
+        formattedmsg = "技术测试,三秒后撤回(群号{})\n".format(top, g)
+
+        i = 0
+        for s in say_count_name:
+            if i == top:
+                break
+
+            formattedmsg += "第{}名:{}  发言次数:{}\n".format(i + 1, s[0], s[1])
+            i += 1
+        time2=time.time()
+        formattedmsg+="用时{}".format(time2-time1)
+        return formattedmsg
 
 def get_qstn(vip):
     db = pymysql.connect(host="localhost", user="tizibot", password="12321", database="tizibot", charset='utf8')
@@ -124,14 +168,14 @@ async def per_day(app: Ariadne):
 
     db = pymysql.connect(host="localhost", user="tizibot", password="12321", database="tizibot", charset='utf8')
     cursor = db.cursor()
-    sql = "select * from tizibot"
-    cursor.execute(sql)
-    result = cursor.fetchall()
-    dt = datetime.now().strftime("%Y-%m-%d")  # 获取现在年月日
     for g in chatrank_group:
+        sql = "select * from tizibot where qgroup='{}'".format(g)
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        dt = datetime.now().strftime("%Y-%m-%d")  # 获取现在年月日
         say_count_name_times = {}
         for row in result:
-            if str(dt) in str(row[0]) and str(row[3]) == str(g):  # 是今天且是本次遍历的群
+            if str(dt) in str(row[0]):  # 是今天且是本次遍历的群
                 if ' ' in row[2]:  # 名字是空格记录可能会有bug???
                     name = exception
                 else:
@@ -219,29 +263,29 @@ async def tkg_leader_get():
 
 # 供单次调用
 def per_call(qgroup):
+    time1=time.time()
     top = 10  # 显示几个?
     # say_count_qq={}
     exception = "会让bot出现Exception的屑用户"
 
     db = pymysql.connect(host="localhost", user="tizibot", password="12321", database="tizibot", charset='utf8')
     cursor = db.cursor()
-    sql = "select * from tizibot"
+    sql = "select * from tizibot where qgroup='{}'".format(qgroup)
     cursor.execute(sql)
     result = cursor.fetchall()
     say_count_name_times = {}
     for row in result:
-        if str(row[3]) == str(qgroup):  # 是今天且是本次遍历的群
-            if ' ' in row[2]:  # 名字是空格记录可能会有bug???
-                name = exception
-            else:
-                name = row[2]
-            # if row[1] not in say_count_qq:
-            if row[2] not in say_count_name_times:
-                # say_count_qq[row[1]] = 1
-                say_count_name_times[name] = 1
-            else:
-                # say_count_qq[row[1]] += 1
-                say_count_name_times[name] += 1
+        if ' ' in row[2]:  # 名字是空格记录可能会有bug???
+            name = exception
+        else:
+            name = row[2]
+        # if row[1] not in say_count_qq:
+        if row[2] not in say_count_name_times:
+            # say_count_qq[row[1]] = 1
+            say_count_name_times[name] = 1
+        else:
+            # say_count_qq[row[1]] += 1
+            say_count_name_times[name] += 1
 
     say_count_name = sorted(say_count_name_times.items(), reverse=True,
                             key=lambda kv: (kv[1], kv[0]))  # 排序,返回列表,内容为人名和发言次数元组
@@ -253,9 +297,10 @@ def per_call(qgroup):
     for s in say_count_name:
         if i == top:
             break
-
         formattedmsg += "第{}名:{}  发言次数:{}\n".format(i + 1, s[0], s[1])
         i += 1
+    time2=time.time()
+    formattedmsg+="用时{}秒".format(time2-time1)
 
     return formattedmsg
 
@@ -274,10 +319,17 @@ def tkg_percall():
     else:
         return "faild"
 
+# 消息监听,关键词回复
+@bcc.receiver("FriendMessage")
+async def f_message_listener(app: Ariadne,message: MessageChain):
+    msg = message.asPersistentString()
+    if '技术测试' in msg:
+        r=tech_test()
+        await app.sendFriendMessage(179528936, MessageChain.create(r))
 
 # 消息监听,关键词回复
 @bcc.receiver("TempMessage")
-async def s_message_listener(app: Ariadne, member: Member, message: MessageChain, source: Source):
+async def s_message_listener(app: Ariadne, member: Member, message: MessageChain):
     msg = message.asPersistentString()
     global callbacklist, manager_list, time_get_tkg, caller_and_qid
     if '抽高木' in msg:  # 帮助
@@ -319,10 +371,11 @@ async def s_message_listener(app: Ariadne, member: Member, message: MessageChain
                                               MessageChain.create([At(member.id), Plain('回答错误，答案是{}'.format(answer))]))
 
 
+
 # 消息监听,关键词回复
 @bcc.receiver("GroupMessage")
 async def g_message_listener(app: Ariadne, member: Member, message: MessageChain, source: Source):
-    global callbacklist, manager_list, time_get_tkg
+    global callbacklist, manager_list, time_get_tkg, callbackid
 
     if len(said_list) == 5:  # 群员发言列表等于5,清最旧
         said_list.pop(0)
@@ -382,7 +435,7 @@ async def g_message_listener(app: Ariadne, member: Member, message: MessageChain
             formattedmsg = "最近撤回(设定仅显示{}条)\n".format(max_show)
             for call in callbacklist:
                 formattedmsg += "撤回者:{} | 撤回内容:{}\n".format(call['callbacker'], call['msg'])
-            await app.sendMessage(member.group, MessageChain.create(Plain(formattedmsg)))
+            callbackid = await app.sendMessage(member.group, MessageChain.create(Plain(formattedmsg)))
         elif '计算 ' in msg:  # 计算器
             cal = msg.replace("?计算 ", "")
             r = calculate.calc(cal)
@@ -414,6 +467,23 @@ async def g_message_listener(app: Ariadne, member: Member, message: MessageChain
             await app.sendMessage(member.group, MessageChain.create(At(member.id), Plain(
                 " 测试功能，但没加鉴权，不要乱触发\n问题:{}\nA:{}\nB:{}\nC:{}\nD:{}".format(r[0], r[1], r[2], r[3],
                                                                           r[4]))))
+        elif "关键词添加" in msg:
+            try:
+                msg.replace("关键词添加","")
+                add=msg.split(" ")
+                db = pymysql.connect(host="localhost", user="tizibot", password="12321", database="tizibot",
+                                     charset='utf8')
+                cursor = db.cursor()
+                sql = "INSERT INTO `QA`(`Q`, `A`) VALUES ('{}','{}')".format(add[1],add[2])
+                cursor.execute(sql)
+                db.commit()
+                await app.sendMessage(member.group, MessageChain.create([At(member.id), Plain('提交成功!')]))
+            except Exception as e:
+                await app.sendMessage(member.group, MessageChain.create([At(member.id), Plain('提交失败,'
+                                                                                              '请检查下是不是用法错误?已反馈给主人\nexception:{}'.format(e))]))
+
+            db.close()
+            cursor.close()
 
     if message.has(Quote):
         if message.has(At):  # 关闭
@@ -432,9 +502,33 @@ async def g_message_listener(app: Ariadne, member: Member, message: MessageChain
 
     if message.has(At):  # 出现At
         at = message.get(At)
-        if at[0].target == 2018957703 and '爬' in msg and member.id in manager_list:
-            await app.sendMessage(member.group, MessageChain.create([Plain('我这就爬，呜呜呜~~~（loop stopped）')]))
-            loop.stop()
+        if at[0].target == 2018957703:
+            if "嘘" in msg:
+                await app.recallMessage(callbackid)
+            elif '爬' in msg and member.id in manager_list:
+                await app.sendMessage(member.group, MessageChain.create([Plain('我这就爬，呜呜呜~~~（loop stopped）')]))
+                loop.stop()
+            elif not message.has(Quote):
+                statement=False
+                db = pymysql.connect(host="localhost", user="tizibot", password="12321", database="tizibot",
+                                     charset='utf8')
+                cursor = db.cursor()
+                sql = "select * from QA"
+                cursor.execute(sql)
+                result = cursor.fetchall()
+
+                for r in result:
+                    if r[0] in msg:
+                        await app.sendMessage(member.group, MessageChain.create([Plain(r[1])]),quote=message.getFirst(Source))
+                        statement=True
+                        break
+                if not statement :
+                    await app.sendMessage(member.group,
+                                          MessageChain.create([Plain("还没这个关键词回复哦~\n尝试   ?关键词添加 [问题] [答案]   来添加吧!")]),
+                                          quote=message.getFirst(Source))
+
+                db.close()
+                cursor.close()
 
         # 若继续添加关键词,需继续写elif
 
@@ -474,9 +568,12 @@ async def member_nudge(app: Ariadne, event: NudgeEvent):
         now = time.time()
         print(now - timenudge > cd)
         if now - timenudge > cd:
-            await app.sendGroupMessage(event.group_id, MessageChain.create([Plain(random.choice(cuoyicuo_say))]))
+            if random.randint(0,1) == 1:
+                await app.sendGroupMessage(event.group_id, MessageChain.create([Plain(random.choice(cuoyicuo_say)+"(戳回去)")]))
+                await app.sendNudge(event.supplicant,event.group_id)
+            else:
+                await app.sendGroupMessage(event.group_id, MessageChain.create([Plain(random.choice(cuoyicuo_say))]))
             timenudge = time.time()
-
 
 # 5秒后撤回示例
 # await asyncio.sleep(5)
